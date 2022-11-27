@@ -33,6 +33,10 @@ body {
   padding: 2.5em;
 }
 
+.markdown-body table td {
+  padding: 18px 6px !important;
+}
+
 #title-search {
   color: var(--dracula-yellow);
 }
@@ -40,8 +44,16 @@ body {
   color: var(--dracula-light-blue);
 }
 
+#list-length {
+  padding-left: 20px;
+  margin-top: auto;
+  margin-bottom: auto;
+  padding-bottom: 0;
+}
+
 .gist-search {
   display: flex;
+  flex-wrap: wrap;
 }
 
 #btn-search {
@@ -118,6 +130,9 @@ th {
   .markdown-body {
     padding: 15px;
   }
+  #list-length {
+    padding-left: 10px;
+  }
 }
 
 @media (max-width: 467px) {
@@ -130,4 +145,11 @@ th {
     min-width: 70px;
     font-size: 0.8em;
   }
+
+  #btn-search {
+    margin-right: 0;
+  }
+  /* #list-length {
+    padding-left: 0;
+  } */
 }

@@ -13,7 +13,7 @@ let btnGithub = document.querySelector("#btn-github");
 let btnGist = document.querySelector("#btn-gist");
 let btnGo = document.querySelector("#btn-go");
 
-const getRowName = (row) => {
+const getNameField = (row) => {
   let rowName;
 
   if (boolGist) {
@@ -27,22 +27,22 @@ const getRowName = (row) => {
 
 const headers = [
   {
-    name: "Description",
-    key: (e) => e.description || getRowName(e),
+    colName: "Description",
+    key: (e) => e.description || getNameField(e),
     boolAscending: true,
   },
   {
-    name: "Name",
-    key: getRowName,
+    colName: "Name",
+    key: getNameField,
     boolAscending: true,
   },
   {
-    name: "Created",
+    colName: "Created",
     key: (e) => e.created_at,
     boolAscending: false,
   },
   {
-    name: "Updated",
+    colName: "Updated",
     key: (e) => e.updated_at,
     boolAscending: false,
   },
@@ -61,7 +61,7 @@ const headers = [
 //   }
 // }
 
-const getDescription = (row) => {
+const htmlDescription = (row) => {
   let desc;
 
   if (boolGist) {
@@ -83,13 +83,13 @@ const getDescription = (row) => {
   return desc;
 };
 
-const getName = (row) => {
+const htmlName = (row) => {
   let name;
 
   if (boolGist) {
     name = `
     <a href="${row.html_url}" >
-        ${getRowName(row) || "<em>no description</em>"}
+        ${getNameField(row) || "<em>no description</em>"}
     </a>
     `;
 
@@ -108,10 +108,10 @@ const getName = (row) => {
 const buildTableRow = (row) => `
   <tr>
     <td>
-      ${getDescription(row)}
+      ${htmlDescription(row)}
     </td>
     <td>
-      ${getName(row)}
+      ${htmlName(row)}
     </td>
     <td>
       ${row.created_at.slice(0, 10)}
@@ -129,7 +129,7 @@ const buildTable = (list) =>
   <table>
     <tbody>
       <tr>
-        ${headers.map(({ name }) => `<th>${name}</th>`).join("")}
+        ${headers.map(({ colName }) => `<th>${colName}</th>`).join("")}
       </tr>
       ${list.map(buildTableRow).join("")}
     </tbody>
@@ -141,7 +141,7 @@ const listenToHeaderClick = (header) => {
     let colHeading = evt.target.innerText;
 
     // Get the function key and default sort direction for this colHeading
-    let { key, boolAscending } = headers.find((e) => e.name === colHeading);
+    let { key, boolAscending } = headers.find((e) => e.colName === colHeading);
 
     // sortedBy is global and remembers last col sort.
     // If sorted twice in a row then reverse previous
@@ -208,34 +208,12 @@ const limitsToDOM = (limits) => {
 //   limitsToDOM(err.limits);
 // };
 
-btnGithub.addEventListener("click", (e) => {
-  e.preventDefault();
-
-  const searchParams = new URLSearchParams(window.location.ref);
-  searchParams.set("boolGist", "false");
-  searchParams.set("username", `${document.querySelector("#input-username").value}`);
-  searchParams.set("boolSubmit", "false");
-
-  window.location.search = `?${searchParams.toString()}`;
-});
-
-btnGist.addEventListener("click", (e) => {
-  e.preventDefault();
-
-  const searchParams = new URLSearchParams(window.location.ref);
-  searchParams.set("boolGist", "true");
-  searchParams.set("username", `${document.querySelector("#input-username").value}`);
-  searchParams.set("boolSubmit", "false");
-
-  window.location.search = `?${searchParams.toString()}`;
-});
-
 const buildList = async () => {
   list = [];
 
   username = document.querySelector("#input-username").value;
 
-  for (let page = 1; page <= 1; page++) {
+  for (let page = 1; page <= 10; page++) {
     const url = boolGist ? `https://api.github.com/users/${username}/gists?page=${page}&per_page=100` : `https://api.github.com/users/${username}/repos?page=${page}&per_page=100`;
 
     let response = await fetch(url);
@@ -265,8 +243,42 @@ const buildList = async () => {
 
   // sortedBy is global and it has a default value
   // use the default ascend/descend for the default col heading
-  showSortedIcon(headers.find((e) => e.name === sortedBy).boolAscending);
+  showSortedIcon(headers.find((e) => e.colName === sortedBy).boolAscending);
+  document.querySelector("#list-length").innerText = `${list.length} Entries`;
 };
+
+btnGithub.addEventListener("click", (e) => {
+  e.preventDefault();
+
+  const searchParams = new URLSearchParams(window.location.ref);
+  searchParams.set("boolGist", "false");
+  searchParams.set("username", `${document.querySelector("#input-username").value}`);
+  searchParams.set("boolSubmit", "false");
+
+  window.location.search = `?${searchParams.toString()}`;
+});
+
+btnGist.addEventListener("click", (e) => {
+  e.preventDefault();
+
+  const searchParams = new URLSearchParams(window.location.ref);
+  searchParams.set("boolGist", "true");
+  searchParams.set("username", `${document.querySelector("#input-username").value}`);
+  searchParams.set("boolSubmit", "false");
+
+  window.location.search = `?${searchParams.toString()}`;
+});
+
+btnSearch.addEventListener("click", (event) => {
+  event.preventDefault();
+
+  const searchParams = new URLSearchParams(window.location.ref);
+  searchParams.set("boolGist", `${boolGist}`);
+  searchParams.set("boolSubmit", `true`);
+  searchParams.set("username", `${document.querySelector("#input-username").value}`);
+
+  window.location.search = `?${searchParams.toString()}`;
+});
 
 const onLoadRefresh = () => {
   const searchParams = new URLSearchParams(window.location.search);
@@ -292,16 +304,5 @@ const onLoadRefresh = () => {
     buildList(username);
   }
 };
-
-btnSearch.addEventListener("click", (event) => {
-  event.preventDefault();
-
-  const searchParams = new URLSearchParams(window.location.ref);
-  searchParams.set("boolGist", `${boolGist}`);
-  searchParams.set("boolSubmit", `true`);
-  searchParams.set("username", `${document.querySelector("#input-username").value}`);
-
-  window.location.search = `?${searchParams.toString()}`;
-});
 
 onLoadRefresh();

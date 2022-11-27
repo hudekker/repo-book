@@ -262,6 +262,9 @@ const buildList = async () => {
 
   limitsToDOM(limits);
   listToDOM(list);
+
+  // sortedBy is global and it has a default value
+  // use the default ascend/descend for the default col heading
   showSortedIcon(headers.find((e) => e.name === sortedBy).boolAscending);
 };
 

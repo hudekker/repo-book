@@ -56,17 +56,28 @@ body {
   flex-wrap: wrap;
 }
 
+.btn-size {
+  font-size: 1.5rem;
+  color: var(--dracula-white);
+  padding: 10px;
+  width: 60px;
+}
 #btn-search {
   /* margin-right: 20px; */
   width: 60px;
   padding: 5px;
-  border: none;
+  /* border: none; */
+  border: solid 0.5px var(--dracula-white);
 }
-#btn-github,
+#btn-github {
+  border: solid 0.5px var(--dracula-yellow);
+}
+
 #btn-gist {
-  padding: 10px;
-  width: 60px;
-  border: none;
+  border: solid 0.5px var(--dracula-light-blue);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 #btn-github.on {
@@ -152,6 +163,12 @@ th {
   #btn-search {
     margin-right: 0;
   }
+
+  .btn-size {
+    font-size: 1rem;
+    width: 40px;
+  }
+
   /* #list-length {
     padding-left: 0;
   } */

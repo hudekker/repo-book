@@ -244,7 +244,7 @@ const buildList = async () => {
   // sortedBy is global and it has a default value
   // use the default ascend/descend for the default col heading
   showSortedIcon(headers.find((e) => e.colName === sortedBy).boolAscending);
-  document.querySelector("#list-length").innerText = `${list.length} Entries`;
+  document.querySelector("#list-length").textContent = `${list.length} Entries`;
 };
 
 btnGithub.addEventListener("click", (e) => {
@@ -293,11 +293,11 @@ const onLoadRefresh = () => {
     btnGithub.classList.remove("on");
     btnGist.classList.add("on");
     inputUsername.placeholder = `Enter a Gist username`;
-    titleSearch.innerText = "Gist List";
+    titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
     titleSearch.classList.add("gist");
   } else {
     inputUsername.placeholder = `Enter a Github username`;
-    titleSearch.innerText = "Github List";
+    titleSearch.innerHTML = `Github List <span id="list-length"></span>`;
   }
 
   if (username && boolSubmit) {

@@ -378,6 +378,7 @@ const onLoadRefresh = () => {
   document.querySelector("#input-username").value = username;
 
   if (boolGist) {
+    location.hash = "";
     headers = headers.filter((e) => e.boolGist);
     btnGithub.classList.remove("on");
     btnGist.classList.add("on");
@@ -385,6 +386,7 @@ const onLoadRefresh = () => {
     titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
     titleSearch.classList.add("gist");
   } else {
+    location.hash = "";
     headers = headers.filter((e) => e.boolGithub);
     inputUsername.placeholder = `Enter a Github username`;
     titleSearch.innerHTML = `Github List <span id="list-length"></span>`;

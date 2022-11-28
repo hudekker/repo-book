@@ -345,14 +345,20 @@ const setHashParams = (obj) => {
 
 const getHashParams = () => {
   let params = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
-  return JSON.parse(Object.keys(params)[0]);
+  if (Object.keys(params)?.length > 0) {
+    return JSON.parse(Object.keys(params)[0]);
+  }
+  return null;
+  // return params ? JSON?.parse(Object.keys(params)[0]) : null;
 };
 
 const sortList = (obj) => {
+  if (!obj || Object.keys(obj)?.length < 1) return;
+
   let boolAscending;
 
-  obj.sortedBy ? (sortedBy = obj.sortedBy) : null;
-  boolAscending = obj.boolAscending;
+  obj?.sortedBy ? (sortedBy = obj.sortedBy) : null;
+  boolAscending = obj?.boolAscending;
 
   if (obj.sortedBy && list) {
     let { key } = headers.find((e) => e.colName === sortedBy);

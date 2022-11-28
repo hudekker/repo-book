@@ -25,26 +25,42 @@ const getNameField = (row) => {
   return rowName;
 };
 
-const headers = [
+let headers = [
   {
     colName: "Description",
     key: (e) => e.description || getNameField(e),
     boolAscending: true,
+    boolGithub: true,
+    boolGist: true,
   },
   {
     colName: "Name",
     key: getNameField,
     boolAscending: true,
+    boolGithub: true,
+    boolGist: true,
+  },
+  {
+    colName: "Pages",
+    // key: (e) => (e.has_pages ? "1" : "0"),
+    key: (e) => (e.has_pages ? "Y" : "N"),
+    boolAscending: true,
+    boolGithub: true,
+    boolGist: false,
   },
   {
     colName: "Created",
     key: (e) => e.created_at,
     boolAscending: false,
+    boolGithub: true,
+    boolGist: true,
   },
   {
     colName: "Updated",
     key: (e) => e.updated_at,
     boolAscending: false,
+    boolGithub: true,
+    boolGist: true,
   },
 ];
 
@@ -105,6 +121,32 @@ const htmlName = (row) => {
   return name;
 };
 
+const hasPages = (row) => {
+  return row.has_pages ? "Yes" : "No";
+};
+
+const htmlPages = (row) => {
+  if (headers.filter((e) => e.colName === "Pages").length < 1) {
+    result = "";
+  } else {
+    if (row.has_pages) {
+      result = `
+      <td>
+        <a href=https://${row.owner.login}.github.io/${row.name}>${hasPages(row)}</a>
+      </td>
+      `;
+    } else {
+      result = `
+      <td>
+        ${hasPages(row)}
+      </td>
+      `;
+    }
+  }
+
+  return result;
+};
+
 const buildTableRow = (row) => `
   <tr>
     <td>
@@ -113,6 +155,7 @@ const buildTableRow = (row) => `
     <td>
       ${htmlName(row)}
     </td>
+    ${htmlPages(row)}
     <td>
       ${row.created_at.slice(0, 10)}
     </td>
@@ -165,6 +208,9 @@ const listenToHeaderClick = (header) => {
 
     // update the asc or desc icon for this colHeading
     showSortedIcon(boolAscending);
+
+    // location.hash = `#{"sortedBy":"${sortedBy}","boolAscending":"${boolAscending}"}`;
+    setHashParams({ sortedBy, boolAscending });
   });
 };
 
@@ -238,13 +284,25 @@ const buildList = async () => {
     }
   }
 
-  limitsToDOM(limits);
-  listToDOM(list);
+  // sort it
+  let { key, boolAscending } = headers.find((e) => e.colName === sortedBy);
+  list.sort((a, b) => key(a).localeCompare(key(b)));
+
+  if (!boolAscending) {
+    list.reverse();
+  }
 
   // sortedBy is global and it has a default value
   // use the default ascend/descend for the default col heading
+  sortList(getHashParams());
   showSortedIcon(headers.find((e) => e.colName === sortedBy).boolAscending);
   document.querySelector("#list-length").textContent = `${list.length} Entries`;
+
+  // location.hash = `#{"sortedBy":"${sortedBy}","boolAscending":"${boolAscending}"}`;
+  // setHashParams({ sortedBy, boolAscending });
+
+  limitsToDOM(limits);
+  listToDOM(list);
 };
 
 btnGithub.addEventListener("click", (e) => {
@@ -280,22 +338,48 @@ btnSearch.addEventListener("click", (event) => {
   window.location.search = `?${searchParams.toString()}`;
 });
 
+const setHashParams = (obj) => {
+  let params = JSON.stringify(obj);
+  location.hash = params;
+};
+
+const getHashParams = () => {
+  let params = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+  return JSON.parse(Object.keys(params)[0]);
+};
+
+const sortList = (obj) => {
+  let boolAscending;
+
+  obj.sortedBy ? (sortedBy = obj.sortedBy) : null;
+  boolAscending = obj.boolAscending;
+
+  if (obj.sortedBy && list) {
+    let { key } = headers.find((e) => e.colName === sortedBy);
+    list.sort((a, b) => key(a).localeCompare(key(b)));
+
+    if (!boolAscending) {
+      list.reverse();
+    }
+  }
+};
+
 const onLoadRefresh = () => {
   const searchParams = new URLSearchParams(window.location.search);
-
   boolGist = searchParams.get("boolGist") === "true";
   boolSubmit = searchParams.get("boolSubmit") === "true";
-
   username = searchParams.get("username");
   document.querySelector("#input-username").value = username;
 
   if (boolGist) {
+    headers = headers.filter((e) => e.boolGist);
     btnGithub.classList.remove("on");
     btnGist.classList.add("on");
     inputUsername.placeholder = `Enter a Gist username`;
     titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
     titleSearch.classList.add("gist");
   } else {
+    headers = headers.filter((e) => e.boolGithub);
     inputUsername.placeholder = `Enter a Github username`;
     titleSearch.innerHTML = `Github List <span id="list-length"></span>`;
   }

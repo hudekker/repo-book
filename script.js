@@ -5,12 +5,14 @@ let list;
 let boolGist = false;
 let boolSubmit;
 let username;
+let headers;
 let sortedBy = "Created";
 let titleSearch = document.querySelector("#title-search");
 let inputUsername = document.querySelector("#input-username");
 let btnSearch = document.querySelector("#btn-search");
 let btnGithub = document.querySelector("#btn-github");
 let btnGist = document.querySelector("#btn-gist");
+let btnDb = document.querySelector("#btn-db");
 let btnGo = document.querySelector("#btn-go");
 
 const getNameField = (row) => {
@@ -25,7 +27,7 @@ const getNameField = (row) => {
   return rowName;
 };
 
-let headers = [
+let headersTemplate = [
   {
     colName: "Description",
     key: (e) => e.description || getNameField(e),
@@ -179,8 +181,8 @@ const buildTable = (list) =>
   </table>
 `;
 
-const listenToHeaderClick = (header) => {
-  header.addEventListener("click", (evt) => {
+const listenToHeaderClick = (elem) => {
+  elem.addEventListener("click", (evt) => {
     let colHeading = evt.target.innerText;
 
     // Get the function key and default sort direction for this colHeading
@@ -190,7 +192,7 @@ const listenToHeaderClick = (header) => {
     // If sorted twice in a row then reverse previous
     if (sortedBy === colHeading) {
       list.reverse();
-      boolAscending = header.classList.contains("sorted-desc");
+      boolAscending = elem.classList.contains("sorted-desc");
 
       // If "new" to this column then always use default sort
       // Use the key() to sort rows
@@ -210,7 +212,7 @@ const listenToHeaderClick = (header) => {
     showSortedIcon(boolAscending);
 
     // location.hash = `#{"sortedBy":"${sortedBy}","boolAscending":"${boolAscending}"}`;
-    setHashParams({ sortedBy, boolAscending });
+    setHashParams({ ...getHashParams(), ...{ sortedBy, boolAscending } });
   });
 };
 
@@ -255,33 +257,41 @@ const limitsToDOM = (limits) => {
 // };
 
 const buildList = async () => {
-  list = [];
+  try {
+    list = [];
 
-  username = document.querySelector("#input-username").value;
+    // username = document.querySelector("#input-username").value;
 
-  for (let page = 1; page <= 10; page++) {
-    const url = boolGist ? `https://api.github.com/users/${username}/gists?page=${page}&per_page=100` : `https://api.github.com/users/${username}/repos?page=${page}&per_page=100`;
+    for (let page = 1; page <= 10; page++) {
+      const url = boolGist ? `https://api.github.com/users/${username}/gists?page=${page}&per_page=100` : `https://api.github.com/users/${username}/repos?page=${page}&per_page=100`;
 
-    let response = await fetch(url);
+      let response = await fetch(url);
 
-    const { headers } = response;
+      // const { headers } = response;
 
-    limits = {
-      remaining: response.headers.get("x-ratelimit-remaining"),
-      limit: response.headers.get("x-ratelimit-limit"),
-      reset: new Date(response.headers.get("x-ratelimit-reset") * 1000),
-    };
+      limits = {
+        remaining: response.headers.get("x-ratelimit-remaining"),
+        limit: response.headers.get("x-ratelimit-limit"),
+        reset: new Date(response.headers.get("x-ratelimit-reset") * 1000),
+      };
 
-    let data = await response.json();
+      let data = await response.json();
 
-    // const { limits: lastLimits, payload: chunk } = await fetchJson(url);
-    // limits = lastLimits;
+      if (!response.ok) {
+        throw "Nothing found";
+      }
 
-    list.push(...data);
+      // const { limits: lastLimits, payload: chunk } = await fetchJson(url);
+      // limits = lastLimits;
 
-    if (data.length < 100) {
-      break;
+      list.push(...data);
+
+      if (data.length < 100) {
+        break;
+      }
     }
+  } catch (error) {
+    console.log(`Error in fetch `, error);
   }
 
   // sort it
@@ -305,37 +315,127 @@ const buildList = async () => {
   listToDOM(list);
 };
 
+const handleGistGithubParams = () => {
+  if (boolGist) {
+    headers = headersTemplate.filter((e) => e.boolGist);
+    btnGithub.classList.remove("on");
+    btnGist.classList.add("on");
+    inputUsername.placeholder = `Enter a Gist username`;
+    titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
+    titleSearch.classList.add("gist");
+  } else {
+    headers = headersTemplate.filter((e) => e.boolGithub);
+    btnGithub.classList.add("on");
+    btnGist.classList.remove("on");
+    inputUsername.placeholder = `Enter a Github username`;
+    titleSearch.innerHTML = `Github List <span id="list-length"></span>`;
+    titleSearch.classList.remove("gist");
+  }
+};
+
 btnGithub.addEventListener("click", (e) => {
   e.preventDefault();
 
-  const searchParams = new URLSearchParams(window.location.ref);
-  searchParams.set("boolGist", "false");
-  searchParams.set("username", `${document.querySelector("#input-username").value}`);
-  searchParams.set("boolSubmit", "false");
+  boolGist = false;
+  let hashParams = getHashParams();
+  username = document.querySelector("#input-username").value.replace(/\s/g, "");
+  setHashParams({ ...hashParams, ...{ boolGist, username } });
 
-  window.location.search = `?${searchParams.toString()}`;
+  handleGistGithubParams();
+  sortedBy = "Created";
+  setHashParams({ ...getHashParams(), ...{ sortedBy: "Created", boolAscending: false } });
+  // headers = headersTemplate.filter((e) => e.boolGithub);
+  // btnGithub.classList.add("on");
+  // btnGist.classList.remove("on");
+  // inputUsername.placeholder = `Enter a Github username`;
+  // titleSearch.innerHTML = `Github List <span id="list-length"></span>`;
+  // titleSearch.classList.remove("gist");
+
+  if (username) {
+    buildList(username);
+  }
+  // const searchParams = new URLSearchParams(window.location.ref);
+  // searchParams.set("boolGist", "false");
+  // searchParams.set("username", `${document.querySelector("#input-username").value}`);
+  // searchParams.set("boolSubmit", "false");
+
+  // window.location.search = `?${searchParams.toString()}##${JSON.stringify(getHashParams())}`;
 });
+
+const getUsername = () => {
+  let l_username = document.querySelector("#input-username").value.replace(/\s/g, "");
+
+  if (l_username === "") {
+    l_username = getHashParams()?.username;
+    if (l_username) document.querySelector("#input-username").value = l_username;
+  }
+
+  return l_username;
+};
 
 btnGist.addEventListener("click", (e) => {
   e.preventDefault();
 
-  const searchParams = new URLSearchParams(window.location.ref);
-  searchParams.set("boolGist", "true");
-  searchParams.set("username", `${document.querySelector("#input-username").value}`);
-  searchParams.set("boolSubmit", "false");
+  boolGist = true;
+  let hashParams = getHashParams();
+  username = getUsername();
+  setHashParams({ ...hashParams, ...{ boolGist, username } });
 
-  window.location.search = `?${searchParams.toString()}`;
+  // headers = headersTemplate.filter((e) => e.boolGist);
+  // btnGithub.classList.remove("on");
+  // btnGist.classList.add("on");
+  // inputUsername.placeholder = `Enter a Gist username`;
+  // titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
+  // titleSearch.classList.add("gist");
+
+  handleGistGithubParams();
+  sortedBy = "Created";
+  setHashParams({ ...getHashParams(), ...{ sortedBy, boolAscending: false } });
+
+  if (username) {
+    buildList(username);
+  }
+
+  // const searchParams = new URLSearchParams(window.location.ref);
+  // searchParams.set("boolGist", "true");
+  // searchParams.set("username", `${document.querySelector("#input-username").value}`);
+  // searchParams.set("boolSubmit", "false");
+
+  // window.location.search = `?${searchParams.toString()}#${JSON.stringify(getHashParams())}`;
 });
 
 btnSearch.addEventListener("click", (event) => {
   event.preventDefault();
 
-  const searchParams = new URLSearchParams(window.location.ref);
-  searchParams.set("boolGist", `${boolGist}`);
-  searchParams.set("boolSubmit", `true`);
-  searchParams.set("username", `${document.querySelector("#input-username").value}`);
+  username = getUsername();
+  let hashParams = getHashParams();
+  // boolGist = hashParams?.boolGist;
+  boolGist = hashParams?.boolGist ? true : false;
 
-  window.location.search = `?${searchParams.toString()}`;
+  let boolDb = hashParams?.boolDb === "true" ? true : false;
+  boolSubmit = true;
+  setHashParams({ ...hashParams, ...{ boolGist, username, boolSubmit } });
+
+  handleGistGithubParams();
+
+  if (username) {
+    buildList(username);
+  }
+  // const searchParams = new URLSearchParams(window.location.ref);
+  // searchParams.set("boolGist", `${boolGist}`);
+  // searchParams.set("boolSubmit", `true`);
+  // searchParams.set("username", `${document.querySelector("#input-username").value}`);
+
+  // window.location.search = `?${searchParams.toString()}`;
+});
+
+btnDb.addEventListener("click", (event) => {
+  event.preventDefault();
+  btnDb.classList.toggle("on");
+
+  let boolDb = btnDb.classList.contains("on");
+
+  setHashParams({ ...getHashParams(), ...{ boolDb } });
 });
 
 const setHashParams = (obj) => {
@@ -349,18 +449,15 @@ const getHashParams = () => {
     return JSON.parse(Object.keys(params)[0]);
   }
   return null;
-  // return params ? JSON?.parse(Object.keys(params)[0]) : null;
 };
 
 const sortList = (obj) => {
-  if (!obj || Object.keys(obj)?.length < 1) return;
+  if (!obj?.sortedBy || obj?.boolAscending === undefined) return;
 
-  let boolAscending;
+  sortedBy = obj.sortedBy;
+  let boolAscending = obj.boolAscending;
 
-  obj?.sortedBy ? (sortedBy = obj.sortedBy) : null;
-  boolAscending = obj?.boolAscending;
-
-  if (obj.sortedBy && list) {
+  if (sortedBy && list) {
     let { key } = headers.find((e) => e.colName === sortedBy);
     list.sort((a, b) => key(a).localeCompare(key(b)));
 
@@ -371,30 +468,44 @@ const sortList = (obj) => {
 };
 
 const onLoadRefresh = () => {
-  const searchParams = new URLSearchParams(window.location.search);
-  boolGist = searchParams.get("boolGist") === "true";
-  boolSubmit = searchParams.get("boolSubmit") === "true";
-  username = searchParams.get("username");
+  // const searchParams = new URLSearchParams(window.location.search);
+  // boolGist = searchParams.get("boolGist") === "true";
+  // boolSubmit = searchParams.get("boolSubmit") === "true";
+  // username = searchParams.get("username");
+
+  let hashParams = getHashParams();
+  boolGist = hashParams?.boolGist;
+  boolSubmit = hashParams?.boolSubmit;
+  username = hashParams?.username;
+  let boolDb = hashParams?.boolDb;
   document.querySelector("#input-username").value = username;
 
   if (boolGist) {
-    location.hash = "";
-    headers = headers.filter((e) => e.boolGist);
+    // location.hash = "";
+    headers = headersTemplate.filter((e) => e.boolGist);
     btnGithub.classList.remove("on");
     btnGist.classList.add("on");
     inputUsername.placeholder = `Enter a Gist username`;
     titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
     titleSearch.classList.add("gist");
   } else {
-    location.hash = "";
-    headers = headers.filter((e) => e.boolGithub);
+    // location.hash = "";
+    headers = headersTemplate.filter((e) => e.boolGithub);
     inputUsername.placeholder = `Enter a Github username`;
     titleSearch.innerHTML = `Github List <span id="list-length"></span>`;
   }
 
+  if (boolDb) {
+    btnDb.classList.add("on");
+  }
+
   if (username && boolSubmit) {
     buildList(username);
+  } else {
+    setHashParams({ ...getHashParams(), ...{ boolDb } });
   }
 };
 
-onLoadRefresh();
+btnSearch.click();
+
+// onLoadRefresh();

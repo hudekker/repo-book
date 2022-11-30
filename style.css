@@ -80,6 +80,10 @@ body {
   justify-content: center;
 }
 
+#btn-db {
+  border: solid 0.5px var(--dracula-pink);
+}
+
 #btn-github.on {
   background-color: var(--dracula-yellow);
   color: var(--dracula-dark-black);
@@ -87,6 +91,10 @@ body {
 
 #btn-gist.on {
   background-color: var(--dracula-light-blue);
+  color: var(--dracula-dark-black);
+}
+#btn-db.on {
+  background-color: var(--dracula-green);
   color: var(--dracula-dark-black);
 }
 

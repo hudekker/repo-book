@@ -328,7 +328,7 @@ const handleGistGithubParams = () => {
     btnGithub.classList.add("on");
     btnGist.classList.remove("on");
     inputUsername.placeholder = `Enter a Github username`;
-    titleSearch.innerHTML = `Github List <span id="list-length"></span>`;
+    titleSearch.innerHTML = `Repo List <span id="list-length"></span>`;
     titleSearch.classList.remove("gist");
   }
 };
@@ -492,7 +492,7 @@ const onLoadRefresh = () => {
     // location.hash = "";
     headers = headersTemplate.filter((e) => e.boolGithub);
     inputUsername.placeholder = `Enter a Github username`;
-    titleSearch.innerHTML = `Github List <span id="list-length"></span>`;
+    titleSearch.innerHTML = `Repo List <span id="list-length"></span>`;
   }
 
   if (boolDb) {

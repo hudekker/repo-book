@@ -61,6 +61,7 @@ body {
 .btn {
   border: solid 0.5px var(--dracula-white);
   line-height: inherit;
+  line-height: 1.5;
 }
 
 .btn-size {

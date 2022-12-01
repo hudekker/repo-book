@@ -407,12 +407,15 @@ btnGist.addEventListener("click", (e) => {
 btnSearch.addEventListener("click", (event) => {
   event.preventDefault();
 
+  btnDb.classList.toggle("on");
+  btnSearch.classList.toggle("on");
+  inputUsername.classList.remove("no-display");
+
   username = getUsername();
   let hashParams = getHashParams();
-  // boolGist = hashParams?.boolGist;
+
   boolGist = hashParams?.boolGist ? true : false;
 
-  let boolDb = hashParams?.boolDb === "true" ? true : false;
   boolSubmit = true;
   setHashParams({ ...hashParams, ...{ boolGist, username, boolSubmit } });
 
@@ -421,17 +424,13 @@ btnSearch.addEventListener("click", (event) => {
   if (username) {
     buildList(username);
   }
-  // const searchParams = new URLSearchParams(window.location.ref);
-  // searchParams.set("boolGist", `${boolGist}`);
-  // searchParams.set("boolSubmit", `true`);
-  // searchParams.set("username", `${document.querySelector("#input-username").value}`);
-
-  // window.location.search = `?${searchParams.toString()}`;
 });
 
 btnDb.addEventListener("click", (event) => {
   event.preventDefault();
   btnDb.classList.toggle("on");
+  btnSearch.classList.toggle("on");
+  inputUsername.classList.add("no-display");
 
   let boolDb = btnDb.classList.contains("on");
 

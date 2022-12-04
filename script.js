@@ -2,18 +2,44 @@
 
 let limits;
 let list;
+let fields;
 let boolGist = false;
 let boolSubmit;
 let username;
-let headers;
 let sortedBy = "Created";
 let titleSearch = document.querySelector("#title-search");
 let inputUsername = document.querySelector("#input-username");
 let btnSearch = document.querySelector("#btn-search");
-let btnGithub = document.querySelector("#btn-github");
+let btnRepo = document.querySelector("#btn-github");
 let btnGist = document.querySelector("#btn-gist");
 let btnDb = document.querySelector("#btn-db");
 let btnGo = document.querySelector("#btn-go");
+
+const setSpinners = (bool) => {
+  let spinnerGroup = document.querySelector("#spinner-group");
+
+  // Turn on spinner
+  if (bool) {
+    spinnerGroup.classList.remove("display-none");
+
+    // Turn off spinner
+  } else {
+    spinnerGroup.classList.add("display-none");
+  }
+};
+
+const setHashParams = (obj) => {
+  let params = JSON.stringify(obj);
+  location.hash = params;
+};
+
+const getHashParams = () => {
+  let params = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+  if (Object.keys(params)?.length > 0) {
+    return JSON.parse(Object.keys(params)[0]);
+  }
+  return null;
+};
 
 const getNameField = (row) => {
   let rowName;
@@ -26,45 +52,6 @@ const getNameField = (row) => {
 
   return rowName;
 };
-
-let headersTemplate = [
-  {
-    colName: "Description",
-    key: (e) => e.description || getNameField(e),
-    boolAscending: true,
-    boolGithub: true,
-    boolGist: true,
-  },
-  {
-    colName: "Name",
-    key: getNameField,
-    boolAscending: true,
-    boolGithub: true,
-    boolGist: true,
-  },
-  {
-    colName: "Pages",
-    // key: (e) => (e.has_pages ? "1" : "0"),
-    key: (e) => (e.has_pages ? "Y" : "N"),
-    boolAscending: true,
-    boolGithub: true,
-    boolGist: false,
-  },
-  {
-    colName: "Created",
-    key: (e) => e.created_at,
-    boolAscending: false,
-    boolGithub: true,
-    boolGist: true,
-  },
-  {
-    colName: "Updated",
-    key: (e) => e.updated_at,
-    boolAscending: false,
-    boolGithub: true,
-    boolGist: true,
-  },
-];
 
 // class GHRequestError extends Error {
 //   constructor(limits = {}, ...params) {
@@ -84,17 +71,21 @@ const htmlDescription = (row) => {
 
   if (boolGist) {
     desc = `
-      <a href="${row.html_url}" >
-        ${row.description || (Object.keys(row.files).length ? Object.values(row.files)[0].filename : "<em>no description</em>")}
-      </a>
+    <td>
+        <a href="${row.html_url}" >
+          ${row.description || (Object.keys(row.files).length ? Object.values(row.files)[0].filename : "<em>no description</em>")}
+        </a>
+    </td>
     `;
 
     // Github repo
   } else {
     desc = `
-        <a href="${row.html_url}" >
-          ${row.description || "<em>no description</em>"}
-        </a>
+      <td>    
+          <a href="${row.html_url}" >
+            ${row.description || "<em>no description</em>"}
+          </a>
+      </td>    
       `;
   }
 
@@ -104,19 +95,24 @@ const htmlDescription = (row) => {
 const htmlName = (row) => {
   let name;
 
+  // Gist
   if (boolGist) {
     name = `
-    <a href="${row.html_url}" >
-        ${getNameField(row) || "<em>no description</em>"}
-    </a>
+    <td>    
+        <a href="${row.html_url}" >
+            ${getNameField(row) || "<em>no description</em>"}
+        </a>
+    </td>
     `;
 
-    // Github repo
+    // Repo
   } else {
     name = `
+    <td>    
         <a href="${row.html_url}">
           ${row.name || "<em>no name</em>"}
         </a>
+    </td>
       `;
   }
 
@@ -128,7 +124,9 @@ const hasPages = (row) => {
 };
 
 const htmlPages = (row) => {
-  if (headers.filter((e) => e.colName === "Pages").length < 1) {
+  let result;
+
+  if (fields.filter((e) => e.field === "Pages").length < 1) {
     result = "";
   } else {
     if (row.has_pages) {
@@ -149,23 +147,92 @@ const htmlPages = (row) => {
   return result;
 };
 
-const buildTableRow = (row) => `
-  <tr>
-    <td>
-      ${htmlDescription(row)}
-    </td>
-    <td>
-      ${htmlName(row)}
-    </td>
-    ${htmlPages(row)}
-    <td>
-      ${row.created_at.slice(0, 10)}
-    </td>
-    <td>
-      ${row.updated_at.slice(0, 10)}
-    </td>
-  </tr>
-`;
+const htmlCreated = (row) => {
+  return `
+  <td>
+    ${row.created_at.slice(0, 10)}
+  </td>
+  `;
+};
+const htmlUpdated = (row) => {
+  return `
+  <td>
+    ${row.updated_at.slice(0, 10)}
+  </td>
+  `;
+};
+
+let fieldsRepo = [
+  {
+    field: "Name",
+    html: htmlName,
+    key: getNameField,
+    boolAscending: true,
+  },
+  {
+    field: "Description",
+    html: htmlDescription,
+    key: (e) => e.description || getNameField(e),
+    boolAscending: true,
+  },
+  {
+    field: "Pages",
+    html: htmlCreated,
+    key: (e) => (e.has_pages ? "Y" : "N"),
+    boolAscending: false,
+  },
+  {
+    field: "Created",
+    html: htmlCreated,
+    key: (e) => e.created_at,
+    boolAscending: false,
+  },
+  {
+    field: "Updated",
+    html: htmlUpdated,
+    key: (e) => e.updated_at,
+    boolAscending: false,
+  },
+];
+
+let fieldsGist = [
+  {
+    field: "Description",
+    html: htmlDescription,
+    key: (e) => e.description || getNameField(e),
+    boolAscending: true,
+  },
+  {
+    field: "Name",
+    html: htmlName,
+    key: getNameField,
+    boolAscending: true,
+  },
+  {
+    field: "Created",
+    html: htmlCreated,
+    key: (e) => e.created_at,
+    boolAscending: false,
+  },
+  {
+    field: "Updated",
+    html: htmlUpdated,
+    key: (e) => e.updated_at,
+    boolAscending: false,
+  },
+];
+
+const buildTableRow = (row) => {
+  let result;
+
+  if (boolGist) {
+    result = fieldsGist.map((e) => e.html(row)).join("");
+  } else {
+    result = fieldsRepo.map((e) => e.html(row)).join("");
+  }
+
+  return `<tr>${result}</tr>`;
+};
 
 const buildTable = (list) =>
   list.length === 0
@@ -174,46 +241,60 @@ const buildTable = (list) =>
   <table>
     <tbody>
       <tr>
-        ${headers.map(({ colName }) => `<th>${colName}</th>`).join("")}
+        ${fields.map((e) => `<th>${e.field}</th>`).join("")}
       </tr>
       ${list.map(buildTableRow).join("")}
     </tbody>
   </table>
 `;
 
-const listenToHeaderClick = (elem) => {
-  elem.addEventListener("click", (evt) => {
-    let colHeading = evt.target.innerText;
+const sortList = (obj) => {
+  if (!obj?.sortedBy || obj?.boolAscending === undefined) return;
 
-    // Get the function key and default sort direction for this colHeading
-    let { key, boolAscending } = headers.find((e) => e.colName === colHeading);
+  sortedBy = obj.sortedBy;
+  let boolAscending = obj.boolAscending;
 
-    // sortedBy is global and remembers last col sort.
-    // If sorted twice in a row then reverse previous
-    if (sortedBy === colHeading) {
+  if (sortedBy && list) {
+    let { key } = fields.find((e) => e.field === sortedBy);
+    list.sort((a, b) => key(a).localeCompare(key(b)));
+
+    if (!boolAscending) {
       list.reverse();
-      boolAscending = elem.classList.contains("sorted-desc");
-
-      // If "new" to this column then always use default sort
-      // Use the key() to sort rows
-    } else {
-      sortedBy = colHeading;
-      list.sort((a, b) => key(a).localeCompare(key(b)));
-
-      if (!boolAscending) {
-        list.reverse();
-      }
     }
+  }
+};
 
-    // rebuild the dom using this sorted list
-    listToDOM(list);
+const handleSortClick = (evt) => {
+  let field = evt.target.innerText;
 
-    // update the asc or desc icon for this colHeading
-    showSortedIcon(boolAscending);
+  // Get the function key and default sort direction for this colHeading
+  let { key, boolAscending } = fields.find((e) => e.field === field);
 
-    // location.hash = `#{"sortedBy":"${sortedBy}","boolAscending":"${boolAscending}"}`;
-    setHashParams({ ...getHashParams(), ...{ sortedBy, boolAscending } });
-  });
+  // sortedBy is global and remembers last col sort.
+  // If sorted twice in a row then reverse previous
+  if (sortedBy === field) {
+    list.reverse();
+    boolAscending = elem.classList.contains("sorted-desc");
+
+    // If "new" to this column then always use default sort
+    // Use the key() to sort rows
+  } else {
+    sortedBy = field;
+    list.sort((a, b) => key(a).localeCompare(key(b)));
+
+    if (!boolAscending) {
+      list.reverse();
+    }
+  }
+
+  // rebuild the dom using this sorted list
+  listToDOM(list);
+
+  // update the asc or desc icon for this colHeading
+  showSortedIcon(boolAscending);
+
+  // location.hash = `#{"sortedBy":"${sortedBy}","boolAscending":"${boolAscending}"}`;
+  setHashParams({ ...getHashParams(), ...{ sortedBy, boolAscending } });
 };
 
 const showSortedIcon = (boolAscending) => {
@@ -228,8 +309,8 @@ const listToDOM = (list) => {
   // Rebuild the dom using the list in memory
   document.querySelector(".tbl-search").innerHTML = buildTable(list);
 
-  // Add event listeners just for the col headers
-  document.querySelectorAll(".tbl-search th").forEach(listenToHeaderClick);
+  // Add event listeners just for the header fields
+  document.querySelectorAll(".tbl-search th").forEach((el) => el.addEventListener("click", handleSortClick));
 };
 
 const limitsToDOM = (limits) => {
@@ -247,7 +328,7 @@ const limitsToDOM = (limits) => {
 //   ({ limits, gists } = response);
 //   limitsToDOM(limits);
 //   gistsToDOM(gists);
-//   showSortedIcon(headers.find((e) => e.name === sortedBy).ascending);
+//   showSortedIcon(fields.find((e) => e.name === sortedBy).ascending);
 // };
 
 // const handleError = (err) => {
@@ -258,16 +339,16 @@ const limitsToDOM = (limits) => {
 
 const buildList = async () => {
   try {
+    fields = boolGist ? fieldsGist : fieldsRepo;
     list = [];
 
     // username = document.querySelector("#input-username").value;
+    setSpinners(true);
 
     for (let page = 1; page <= 10; page++) {
       const url = boolGist ? `https://api.github.com/users/${username}/gists?page=${page}&per_page=100` : `https://api.github.com/users/${username}/repos?page=${page}&per_page=100`;
 
       let response = await fetch(url);
-
-      // const { headers } = response;
 
       limits = {
         remaining: response.headers.get("x-ratelimit-remaining"),
@@ -281,9 +362,6 @@ const buildList = async () => {
         throw "Nothing found";
       }
 
-      // const { limits: lastLimits, payload: chunk } = await fetchJson(url);
-      // limits = lastLimits;
-
       list.push(...data);
 
       if (data.length < 100) {
@@ -292,10 +370,13 @@ const buildList = async () => {
     }
   } catch (error) {
     console.log(`Error in fetch `, error);
+    setSpinners(false);
   }
 
+  setSpinners(false);
+
   // sort it
-  let { key, boolAscending } = headers.find((e) => e.colName === sortedBy);
+  let { key, boolAscending } = fields.find((e) => e.field === sortedBy);
   list.sort((a, b) => key(a).localeCompare(key(b)));
 
   if (!boolAscending) {
@@ -305,27 +386,24 @@ const buildList = async () => {
   // sortedBy is global and it has a default value
   // use the default ascend/descend for the default col heading
   sortList(getHashParams());
-  showSortedIcon(headers.find((e) => e.colName === sortedBy).boolAscending);
+  showSortedIcon(fields.find((e) => e.field === sortedBy).boolAscending);
   document.querySelector("#list-length").textContent = `${list.length} Entries`;
-
-  // location.hash = `#{"sortedBy":"${sortedBy}","boolAscending":"${boolAscending}"}`;
-  // setHashParams({ sortedBy, boolAscending });
 
   limitsToDOM(limits);
   listToDOM(list);
 };
 
 const handleGistGithubParams = () => {
+  fields = boolGist ? fieldsGist : fieldsRepo;
+
   if (boolGist) {
-    headers = headersTemplate.filter((e) => e.boolGist);
-    btnGithub.classList.remove("on");
+    btnRepo.classList.remove("on");
     btnGist.classList.add("on");
     inputUsername.placeholder = `Enter a Gist username`;
     titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
     titleSearch.classList.add("gist");
   } else {
-    headers = headersTemplate.filter((e) => e.boolGithub);
-    btnGithub.classList.add("on");
+    btnRepo.classList.add("on");
     btnGist.classList.remove("on");
     inputUsername.placeholder = `Enter a Github username`;
     titleSearch.innerHTML = `Repo List <span id="list-length"></span>`;
@@ -333,7 +411,7 @@ const handleGistGithubParams = () => {
   }
 };
 
-btnGithub.addEventListener("click", (e) => {
+btnRepo.addEventListener("click", (e) => {
   e.preventDefault();
 
   boolGist = false;
@@ -344,22 +422,10 @@ btnGithub.addEventListener("click", (e) => {
   handleGistGithubParams();
   sortedBy = "Created";
   setHashParams({ ...getHashParams(), ...{ sortedBy: "Created", boolAscending: false } });
-  // headers = headersTemplate.filter((e) => e.boolGithub);
-  // btnGithub.classList.add("on");
-  // btnGist.classList.remove("on");
-  // inputUsername.placeholder = `Enter a Github username`;
-  // titleSearch.innerHTML = `Github List <span id="list-length"></span>`;
-  // titleSearch.classList.remove("gist");
 
   if (username) {
     buildList(username);
   }
-  // const searchParams = new URLSearchParams(window.location.ref);
-  // searchParams.set("boolGist", "false");
-  // searchParams.set("username", `${document.querySelector("#input-username").value}`);
-  // searchParams.set("boolSubmit", "false");
-
-  // window.location.search = `?${searchParams.toString()}##${JSON.stringify(getHashParams())}`;
 });
 
 const getUsername = () => {
@@ -381,13 +447,6 @@ btnGist.addEventListener("click", (e) => {
   username = getUsername();
   setHashParams({ ...hashParams, ...{ boolGist, username } });
 
-  // headers = headersTemplate.filter((e) => e.boolGist);
-  // btnGithub.classList.remove("on");
-  // btnGist.classList.add("on");
-  // inputUsername.placeholder = `Enter a Gist username`;
-  // titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
-  // titleSearch.classList.add("gist");
-
   handleGistGithubParams();
   sortedBy = "Created";
   setHashParams({ ...getHashParams(), ...{ sortedBy, boolAscending: false } });
@@ -395,13 +454,6 @@ btnGist.addEventListener("click", (e) => {
   if (username) {
     buildList(username);
   }
-
-  // const searchParams = new URLSearchParams(window.location.ref);
-  // searchParams.set("boolGist", "true");
-  // searchParams.set("username", `${document.querySelector("#input-username").value}`);
-  // searchParams.set("boolSubmit", "false");
-
-  // window.location.search = `?${searchParams.toString()}#${JSON.stringify(getHashParams())}`;
 });
 
 btnSearch.addEventListener("click", (event) => {
@@ -437,74 +489,9 @@ btnDb.addEventListener("click", (event) => {
   setHashParams({ ...getHashParams(), ...{ boolDb } });
 });
 
-const setHashParams = (obj) => {
-  let params = JSON.stringify(obj);
-  location.hash = params;
-};
-
-const getHashParams = () => {
-  let params = Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
-  if (Object.keys(params)?.length > 0) {
-    return JSON.parse(Object.keys(params)[0]);
-  }
-  return null;
-};
-
-const sortList = (obj) => {
-  if (!obj?.sortedBy || obj?.boolAscending === undefined) return;
-
-  sortedBy = obj.sortedBy;
-  let boolAscending = obj.boolAscending;
-
-  if (sortedBy && list) {
-    let { key } = headers.find((e) => e.colName === sortedBy);
-    list.sort((a, b) => key(a).localeCompare(key(b)));
-
-    if (!boolAscending) {
-      list.reverse();
-    }
-  }
-};
-
-const onLoadRefresh = () => {
-  // const searchParams = new URLSearchParams(window.location.search);
-  // boolGist = searchParams.get("boolGist") === "true";
-  // boolSubmit = searchParams.get("boolSubmit") === "true";
-  // username = searchParams.get("username");
-
-  let hashParams = getHashParams();
-  boolGist = hashParams?.boolGist;
-  boolSubmit = hashParams?.boolSubmit;
-  username = hashParams?.username;
-  let boolDb = hashParams?.boolDb;
-  document.querySelector("#input-username").value = username;
-
-  if (boolGist) {
-    // location.hash = "";
-    headers = headersTemplate.filter((e) => e.boolGist);
-    btnGithub.classList.remove("on");
-    btnGist.classList.add("on");
-    inputUsername.placeholder = `Enter a Gist username`;
-    titleSearch.innerHTML = `Gist List <span id="list-length"></span>`;
-    titleSearch.classList.add("gist");
-  } else {
-    // location.hash = "";
-    headers = headersTemplate.filter((e) => e.boolGithub);
-    inputUsername.placeholder = `Enter a Github username`;
-    titleSearch.innerHTML = `Repo List <span id="list-length"></span>`;
-  }
-
-  if (boolDb) {
-    btnDb.classList.add("on");
-  }
-
-  if (username && boolSubmit) {
-    buildList(username);
-  } else {
-    setHashParams({ ...getHashParams(), ...{ boolDb } });
-  }
-};
-
 btnSearch.click();
 
-// onLoadRefresh();
+// Spinners
+
+//Turn on spinners
+// setSpinners(true);

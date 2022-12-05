@@ -177,7 +177,7 @@ let fieldsRepo = [
   },
   {
     field: "Pages",
-    html: htmlCreated,
+    html: htmlPages,
     key: (e) => (e.has_pages ? "Y" : "N"),
     boolAscending: false,
   },
@@ -274,7 +274,7 @@ const handleSortClick = (evt) => {
   // If sorted twice in a row then reverse previous
   if (sortedBy === field) {
     list.reverse();
-    boolAscending = elem.classList.contains("sorted-desc");
+    boolAscending = evt.target.classList.contains("sorted-desc");
 
     // If "new" to this column then always use default sort
     // Use the key() to sort rows

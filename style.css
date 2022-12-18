@@ -52,6 +52,9 @@
   display: none;
 }
 
+.dracula-white {
+  color: var(--dracula-white);
+}
 .dracula-pink {
   color: var(--dracula-pink);
 }
